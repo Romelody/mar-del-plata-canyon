@@ -296,6 +296,21 @@ body {
   cursor: default;
 }
 
+.btn.ghost {
+  width: auto;
+  height: auto;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #3a3a47;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.btn.ghost:hover { color: #fff; border-color: #5a5a6b; }
+.btn.ghost.danger { border-color: #7a3a3f; color: #e7c9c9; }
+.btn.ghost.danger:hover { border-color: #a6535a; }
+
 .btn:focus-visible {
   outline: 2px dashed #d16;
   outline-offset: 3px;
@@ -360,6 +375,31 @@ body {
   backdrop-filter: blur(1.5px);
   z-index: 20;
 }
+
+.winner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 50;
+}
+
+.winner-card {
+  width: min(560px, 90vw);
+  border: 2px solid #2f2e35;
+  background: #26252c;
+  border-radius: 10px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: popIn 240ms ease-out;
+}
+
+.winner-title { font-size: 18px; letter-spacing: 0.18em; text-align: center; margin-bottom: 8px; }
+.winner-sub { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 18px; }
+.winner-actions { display: flex; gap: 12px; justify-content: center; }
+
+@keyframes popIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 .encyclopedia {
   position: absolute;

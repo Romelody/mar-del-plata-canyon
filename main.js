@@ -32,6 +32,9 @@ const utcTimeEl = document.getElementById("utc-time");
 const samplesCountEl = document.getElementById("samples-count");
 const inventoryGridEl = document.getElementById("inventory-grid");
 const encyclopediaGridEl = document.getElementById("encyclopedia-grid");
+const winnerOverlayEl = document.getElementById("winner-overlay");
+const winnerContinueBtn = document.getElementById("winner-continue");
+const winnerResetBtn = document.getElementById("winner-reset");
 const currentTargetEl = document.getElementById("current-target");
 const currentTargetThumbEl = document.getElementById("current-target-thumb");
 // Static ocean status values (hard-coded)
@@ -53,16 +56,34 @@ const state = {
   currentSpeciesEl: null,
   crane: { x: 0, y: 0 }, // pixel coords within viewport
   unlocked: new Set(),
+  speciesEls: new Map(), // id -> HTMLElement (visible species in viewport)
 };
 
-// Available species and their images
-const SPECIES = [
+// Base species templates
+const SPECIES_BASE = [
   { id: "batatita", name: "BATATITA", image: "./species/batatita.png" },
   { id: "el_ojo_del_abismo", name: "EL OJO DEL ABISMO", image: "./species/el_ojo_del_abismo.png" },
   { id: "estrella_culona", name: "ESTRELLA CULONA", image: "./species/estrella_culona.png" },
   { id: "limon", name: "LIMÓN", image: "./species/limon.png" },
   { id: "pececito", name: "PECECITO", image: "./species/pececito.png" },
 ];
+
+// Place many instances of each species across the world grid
+const SPECIES = [];
+(function seedSpecies() {
+  // grid every 60° heading, depths from 1200 to 1800 in 100m steps
+  const headings = [0, 60, 120, 180, 240, 300];
+  const depths = [1200, 1300, 1400, 1500, 1600, 1700, 1800];
+  let idx = 0;
+  headings.forEach((h) => {
+    depths.forEach((d) => {
+      // pick a template round-robin
+      const base = SPECIES_BASE[idx % SPECIES_BASE.length];
+      SPECIES.push({ id: base.id + '_' + h + '_' + d, name: base.name, image: base.image, heading: h, depth: d });
+      idx += 1;
+    });
+  });
+})();
 
 function showGameScreen() {
   if (transitionTimeoutId !== null) {
@@ -78,11 +99,11 @@ function showGameScreen() {
       gameScreen.classList.remove("hidden");
       gameScreen.classList.add("fade-in");
       gameScreen.setAttribute("aria-hidden", "false");
-      // Spawn first species shortly after the game becomes visible
+      // Initialize crane and visible species on enter
       setTimeout(() => {
         ensureCrane();
         centerCrane();
-        spawnRandomSpecies();
+        refreshVisibleSpecies();
         updateTargetingFeedback();
       }, 200);
     },
@@ -232,36 +253,117 @@ function catchCreature() {
 
   renderInventory();
   if (typeof renderEncyclopedia === 'function') renderEncyclopedia();
+  checkWinCondition();
   setTimeout(spawnRandomSpecies, 600);
 }
 
-function spawnRandomSpecies() {
-  if (!viewportEl) return;
-  // Avoid double-spawn
-  if (state.currentSpeciesEl) return;
+// Compute camera world values
+function getCameraHeading() {
+  return mod(state.camera.x * 5, 360);
+}
 
-  const species = SPECIES[(Math.random() * SPECIES.length) | 0];
+function getCameraDepth() {
+  // Match HUD: camera and arm influence
+  return clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000);
+}
+
+function getAngularDelta(a, b) {
+  let d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+function getSignedAngularDelta(a, b) {
+  let d = ((b - a + 540) % 360) - 180; // (-180,180]
+  return d === -180 ? 180 : d;
+}
+
+function ensureSpeciesElement(spec) {
+  if (!viewportEl) return null;
+  if (state.speciesEls.has(spec.id)) return state.speciesEls.get(spec.id);
   const img = new Image();
-  img.src = species.image;
-  img.alt = species.name;
-  img.className = "species";
-
-  // Place within the viewport bounds with padding
+  img.src = spec.image;
+  img.alt = spec.name;
+  img.className = 'species';
+  // Place at center; will be repositioned according to camera delta
   const bounds = viewportEl.getBoundingClientRect();
-  const size = 120; // px visual size
-  const padding = 24;
-  const maxX = Math.max(bounds.width - size - padding * 2, 0);
-  const maxY = Math.max(bounds.height - size - padding * 2, 0);
-  const x = padding + Math.random() * maxX;
-  const y = padding + Math.random() * maxY;
-  img.style.left = `${x}px`;
-  img.style.top = `${y}px`;
-
+  const size = 120;
+  img.style.left = `${(bounds.width - size) / 2}px`;
+  img.style.top = `${(bounds.height - size) / 2}px`;
   viewportEl.appendChild(img);
+  state.speciesEls.set(spec.id, img);
+  return img;
+}
 
-  state.currentSpecies = species;
-  state.currentSpeciesEl = img;
-  updateTargetingFeedback();
+function removeSpeciesElement(specId) {
+  const el = state.speciesEls.get(specId);
+  if (el) {
+    el.remove();
+    state.speciesEls.delete(specId);
+  }
+}
+
+function positionSpeciesElement(spec, el, camH, camD) {
+  if (!viewportEl || !el) return;
+  const bounds = viewportEl.getBoundingClientRect();
+  const size = 120;
+  const padding = 24;
+  const centerX = bounds.width / 2 - size / 2;
+  const centerY = bounds.height / 2 - size / 2;
+  const dhSigned = getSignedAngularDelta(camH, spec.heading);
+  const ddSigned = spec.depth - camD;
+  const kx = (bounds.width / 2 - padding - size / 2) / 50; // map 50° to edge
+  const ky = (bounds.height / 2 - padding - size / 2) / 50; // map 50m to edge
+  const offsetX = dhSigned * kx;
+  const offsetY = ddSigned * ky;
+  const left = clamp(centerX + offsetX, padding, bounds.width - padding - size);
+  const top = clamp(centerY + offsetY, padding, bounds.height - padding - size);
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+}
+
+function refreshVisibleSpecies() {
+  if (!viewportEl) return;
+  const camH = getCameraHeading();
+  const camD = getCameraDepth();
+  const headingThreshold = 50; // degrees
+  const depthThreshold = 50; // meters
+
+  let anyVisible = false;
+  SPECIES.forEach((spec) => {
+    const dh = getAngularDelta(camH, spec.heading);
+    const dd = Math.abs(camD - spec.depth);
+    const shouldShow = dh <= headingThreshold || dd <= depthThreshold;
+    const hasEl = state.speciesEls.has(spec.id);
+    if (shouldShow && !hasEl) {
+      const el = ensureSpeciesElement(spec);
+      positionSpeciesElement(spec, el, camH, camD);
+      anyVisible = true;
+    } else if (shouldShow && hasEl) {
+      const el = state.speciesEls.get(spec.id);
+      positionSpeciesElement(spec, el, camH, camD);
+      anyVisible = true;
+    } else if (!shouldShow && hasEl) {
+      removeSpeciesElement(spec.id);
+    }
+  });
+
+  // Fallback: if nothing visible, guarantee at least one species appears when near by
+  if (!anyVisible) {
+    // Show up to 3 nearest candidates under relaxed window to improve gameplay
+    const candidates = SPECIES.map((spec) => {
+      const dh = getAngularDelta(camH, spec.heading);
+      const dd = Math.abs(camD - spec.depth);
+      const score = Math.min(dh, 50) + Math.min(dd, 50);
+      return { spec, dh, dd, score };
+    })
+      .filter((x) => x.dh <= 50 || x.dd <= 50)
+      .sort((a, b) => a.score - b.score)
+      .slice(0, 3);
+    candidates.forEach(({ spec }) => {
+      const el = ensureSpeciesElement(spec);
+      positionSpeciesElement(spec, el, camH, camD);
+    });
+  }
 }
 
 // ---- Crane (crosshair) mechanics ----
@@ -311,29 +413,45 @@ function isCranePointingAtSpecies() {
 }
 
 function updateTargetingFeedback() {
-  if (!state.currentSpeciesEl) {
-    if (currentTargetEl) currentTargetEl.textContent = "-";
-    if (currentTargetThumbEl) currentTargetThumbEl.innerHTML = "";
+  // Determine if crane is pointing at any visible species
+  let pointedSpec = null;
+  let pointedEl = null;
+  state.speciesEls.forEach((el, id) => {
+    if (!pointedSpec && craneEl) {
+      const c = craneEl.getBoundingClientRect();
+      const s = el.getBoundingClientRect();
+      const cx = c.left + c.width / 2;
+      const cy = c.top + c.height / 2;
+      const hit = cx >= s.left && cx <= s.right && cy >= s.top && cy <= s.bottom;
+      if (hit) {
+        pointedSpec = SPECIES.find((sp) => sp.id === id);
+        pointedEl = el;
+      }
+    }
+    el.classList.remove('targeted');
+  });
+  if (!pointedSpec) {
+    if (currentTargetEl) currentTargetEl.textContent = '-';
+    if (currentTargetThumbEl) currentTargetThumbEl.innerHTML = '';
+    state.currentSpecies = null;
+    state.currentSpeciesEl = null;
     return;
   }
-  const pointing = isCranePointingAtSpecies();
-  state.currentSpeciesEl.classList.toggle("targeted", pointing);
+  pointedEl.classList.add('targeted');
+  state.currentSpecies = pointedSpec;
+  state.currentSpeciesEl = pointedEl;
   if (currentTargetEl) {
-    const isUnlocked = state.caught.some((i) => i.image === state.currentSpecies.image || i.name === state.currentSpecies.name);
-    currentTargetEl.textContent = pointing ? (isUnlocked ? state.currentSpecies.name : "???????") : "-";
+    const isUnlocked = state.unlocked.has(pointedSpec.image);
+    currentTargetEl.textContent = isUnlocked ? pointedSpec.name : '???????';
   }
   if (currentTargetThumbEl) {
-    currentTargetThumbEl.innerHTML = "";
-    if (pointing) {
-      const img = new Image();
-      img.src = state.currentSpecies.image;
-      img.alt = state.currentSpecies.name;
-      currentTargetThumbEl.appendChild(img);
-      const isUnlocked = state.caught.some((i) => i.image === state.currentSpecies.image || i.name === state.currentSpecies.name);
-      currentTargetThumbEl.classList.toggle('grey', !isUnlocked);
-    } else {
-      currentTargetThumbEl.classList.remove('grey');
-    }
+    currentTargetThumbEl.innerHTML = '';
+    const img = new Image();
+    img.src = pointedSpec.image;
+    img.alt = pointedSpec.name;
+    currentTargetThumbEl.appendChild(img);
+    const isUnlocked = state.unlocked.has(pointedSpec.image);
+    currentTargetThumbEl.classList.toggle('grey', !isUnlocked);
   }
 }
 
@@ -368,21 +486,25 @@ function onKeyDown(event) {
     case "W":
       state.arm.y += 1;
       panBackground(0, 1);
+      refreshVisibleSpecies();
       break;
     case "s":
     case "S":
       state.arm.y -= 1;
       panBackground(0, -1);
+      refreshVisibleSpecies();
       break;
     case "a":
     case "A":
       state.arm.x -= 1;
       panBackground(1, 0);
+      refreshVisibleSpecies();
       break;
     case "d":
     case "D":
       state.arm.x += 1;
       panBackground(-1, 0);
+      refreshVisibleSpecies();
       break;
     case "q":
     case "Q":
@@ -467,7 +589,8 @@ function renderEncyclopedia() {
   if (!encyclopediaGridEl) return;
   encyclopediaGridEl.innerHTML = "";
   const unlockedImages = state.unlocked;
-  SPECIES.forEach((spec) => {
+  // Show each species only once in the encyclopedia
+  SPECIES_BASE.forEach((spec) => {
     const card = document.createElement('div');
     card.className = 'ency-card';
     if (unlockedImages.has(spec.image)) card.classList.add('unlocked');
@@ -476,5 +599,34 @@ function renderEncyclopedia() {
     img.alt = spec.name;
     card.appendChild(img);
     encyclopediaGridEl.appendChild(card);
+  });
+}
+
+function checkWinCondition() {
+  if (!winnerOverlayEl) return;
+  const total = SPECIES_BASE.length;
+  if (state.unlocked.size >= total) {
+    winnerOverlayEl.classList.remove('hidden');
+    winnerOverlayEl.setAttribute('aria-hidden', 'false');
+  }
+}
+
+if (winnerContinueBtn) {
+  winnerContinueBtn.addEventListener('click', () => {
+    winnerOverlayEl.classList.add('hidden');
+    winnerOverlayEl.setAttribute('aria-hidden', 'true');
+  });
+}
+
+if (winnerResetBtn) {
+  winnerResetBtn.addEventListener('click', () => {
+    // Reset progress: inventory and unlocks
+    state.caught = [];
+    state.unlocked = new Set();
+    renderInventory();
+    if (typeof renderEncyclopedia === 'function') renderEncyclopedia();
+    updateHud();
+    winnerOverlayEl.classList.add('hidden');
+    winnerOverlayEl.setAttribute('aria-hidden', 'true');
   });
 }
