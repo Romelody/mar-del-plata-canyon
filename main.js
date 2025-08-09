@@ -3,6 +3,7 @@ const introScreen = document.getElementById("intro-screen");
 const gameScreen = document.getElementById("game-screen");
 const playButton = document.getElementById("play-btn");
 const inventoryScreen = document.getElementById("inventory-screen");
+const encyclopediaScreen = document.getElementById("encyclopedia-screen");
 
 // Key UI elements
 const keyElements = {
@@ -12,6 +13,7 @@ const keyElements = {
   s: document.querySelector(".key-s"),
   d: document.querySelector(".key-d"),
   e: document.querySelector(".key-e"),
+  i: document.querySelector(".key-i"),
   ArrowUp: document.querySelector(".key-arrow-up"),
   ArrowDown: document.querySelector(".key-arrow-down"),
   ArrowLeft: document.querySelector(".key-arrow-left"),
@@ -29,6 +31,7 @@ const depthEl = document.getElementById("depth-val");
 const utcTimeEl = document.getElementById("utc-time");
 const samplesCountEl = document.getElementById("samples-count");
 const inventoryGridEl = document.getElementById("inventory-grid");
+const encyclopediaGridEl = document.getElementById("encyclopedia-grid");
 const currentTargetEl = document.getElementById("current-target");
 // Static ocean status values (hard-coded)
 document.getElementById("temp-val").textContent = "2.63 °C";
@@ -38,6 +41,7 @@ document.getElementById("o2sat-val").textContent = "54.3 %";
 
 let transitionTimeoutId = null;
 let showInventory = false;
+let showEncyclopedia = false;
 
 const state = {
   camera: { x: 0, y: 0 },
@@ -148,9 +152,30 @@ function highlight(key, active) {
 
 function toggleInventory() {
   showInventory = !showInventory;
+  // If opening inventory, ensure encyclopedia is closed
+  if (showInventory && typeof showEncyclopedia !== 'undefined' && showEncyclopedia) {
+    showEncyclopedia = false;
+    if (typeof encyclopediaScreen !== 'undefined' && encyclopediaScreen) {
+      encyclopediaScreen.classList.add("hidden");
+      encyclopediaScreen.setAttribute("aria-hidden", "true");
+    }
+  }
   inventoryScreen.classList.toggle("hidden", !showInventory);
   inventoryScreen.setAttribute("aria-hidden", String(!showInventory));
   if (showInventory) renderInventory();
+}
+
+function toggleEncyclopedia() {
+  showEncyclopedia = !showEncyclopedia;
+  // If opening encyclopedia, ensure inventory is closed
+  if (showEncyclopedia && showInventory) {
+    showInventory = false;
+    inventoryScreen.classList.add("hidden");
+    inventoryScreen.setAttribute("aria-hidden", "true");
+  }
+  encyclopediaScreen.classList.toggle("hidden", !showEncyclopedia);
+  encyclopediaScreen.setAttribute("aria-hidden", String(!showEncyclopedia));
+  if (showEncyclopedia) renderEncyclopedia();
 }
 
 function catchCreature() {
@@ -188,6 +213,7 @@ function catchCreature() {
   if (currentTargetEl) currentTargetEl.textContent = "-";
 
   renderInventory();
+  if (typeof renderEncyclopedia === 'function') renderEncyclopedia();
   setTimeout(spawnRandomSpecies, 600);
 }
 
@@ -325,6 +351,10 @@ function onKeyDown(event) {
       break;
     case "e":
     case "E":
+      toggleEncyclopedia();
+      break;
+    case "i":
+    case "I":
       toggleInventory();
       break;
     default:
@@ -372,5 +402,21 @@ function renderInventory() {
       thumbEl.appendChild(imgEl);
     }
     inventoryGridEl.appendChild(card);
+  });
+}
+
+function renderEncyclopedia() {
+  if (!encyclopediaGridEl) return;
+  encyclopediaGridEl.innerHTML = "";
+  const unlockedImages = new Set(state.caught.map((i) => i.image));
+  SPECIES.forEach((spec) => {
+    const card = document.createElement('div');
+    card.className = 'ency-card';
+    if (unlockedImages.has(spec.image)) card.classList.add('unlocked');
+    const img = new Image();
+    img.src = spec.image;
+    img.alt = spec.name;
+    card.appendChild(img);
+    encyclopediaGridEl.appendChild(card);
   });
 }

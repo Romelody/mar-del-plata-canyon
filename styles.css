@@ -332,6 +332,16 @@ body {
   background: rgba(58, 58, 70, 0.55);
   backdrop-filter: blur(1.5px);
 }
+
+.encyclopedia {
+  position: absolute;
+  inset: 0;
+  padding: 24px 40px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(58, 58, 70, 0.55);
+  backdrop-filter: blur(1.5px);
+}
 .inventory-header {
   display: flex;
   justify-content: space-between;
@@ -345,6 +355,35 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 64px 84px;
+}
+
+.encyclopedia-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 24px 24px;
+}
+
+.ency-card {
+  display: grid;
+  place-items: center;
+  background: #242235;
+  border: 2px solid #2f2e35;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.ency-card img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.75;
+}
+
+.ency-card.unlocked img {
+  filter: none;
+  opacity: 1;
 }
 
 .inv-card {

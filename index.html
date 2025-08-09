@@ -66,7 +66,8 @@
             </div>
 
             <div class="controls-right">
-              <button class="btn red key-e" data-key="e" title="Inventory (E)">E</button>
+              <button class="btn red key-i" data-key="i" title="Inventory (I)">I</button>
+              <button class="btn red key-e" data-key="e" title="Enciclopedia (E)">E</button>
             </div>
           </div>
         </div>
@@ -74,10 +75,18 @@
         <div id="inventory-screen" class="inventory hidden" aria-hidden="true">
           <div class="inventory-header">
             <div class="title">MUESTRAS CAPTURADAS</div>
-            <div class="hint">Pulsa E para volver</div>
+            <div class="hint">Pulsa I para volver</div>
           </div>
           <div id="inventory-grid" class="inventory-grid"><!-- cards injected by JS --></div>
         </div>
+
+        <div id="encyclopedia-screen" class="encyclopedia hidden" aria-hidden="true">
+          <div class="inventory-header">
+            <div class="title">ENCICLOPEDIA</div>
+            <div class="hint">Pulsa E para volver</div>
+          </div>
+          <div id="encyclopedia-grid" class="encyclopedia-grid"><!-- thumbs injected by JS --></div>
+        </div>  
       </section>
     </main>
 
