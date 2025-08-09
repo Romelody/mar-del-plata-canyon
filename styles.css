@@ -331,6 +331,7 @@ body {
   flex-direction: column;
   background: rgba(58, 58, 70, 0.55);
   backdrop-filter: blur(1.5px);
+  z-index: 20;
 }
 
 .encyclopedia {
@@ -341,6 +342,7 @@ body {
   flex-direction: column;
   background: rgba(58, 58, 70, 0.55);
   backdrop-filter: blur(1.5px);
+  z-index: 20;
 }
 .inventory-header {
   display: flex;
