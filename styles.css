@@ -265,10 +265,6 @@ body {
   transition: transform 120ms ease;
 }
 
-.arrow.active {
-  color: #ffffff;
-}
-
 /* Inventory */
 .inventory {
   position: absolute;
