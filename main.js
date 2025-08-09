@@ -52,6 +52,7 @@ const state = {
   currentSpecies: null,
   currentSpeciesEl: null,
   crane: { x: 0, y: 0 }, // pixel coords within viewport
+  unlocked: new Set(),
 };
 
 // Available species and their images
@@ -220,6 +221,8 @@ function catchCreature() {
     o2sat: "54.3 %",
   };
   state.caught.push(item);
+  // Mark species as unlocked permanently
+  state.unlocked.add(item.image);
   updateHud();
 
   // Clear current target and schedule next spawn
@@ -463,7 +466,7 @@ function releaseItem(id) {
 function renderEncyclopedia() {
   if (!encyclopediaGridEl) return;
   encyclopediaGridEl.innerHTML = "";
-  const unlockedImages = new Set(state.caught.map((i) => i.image));
+  const unlockedImages = state.unlocked;
   SPECIES.forEach((spec) => {
     const card = document.createElement('div');
     card.className = 'ency-card';
