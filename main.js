@@ -26,7 +26,7 @@ const headingEl = document.getElementById("heading-val");
 const depthEl = document.getElementById("depth-val");
 const utcTimeEl = document.getElementById("utc-time");
 const samplesCountEl = document.getElementById("samples-count");
-const caughtListEl = document.getElementById("caught-list");
+const inventoryGridEl = document.getElementById("inventory-grid");
 // Static ocean status values (hard-coded)
 document.getElementById("temp-val").textContent = "2.63 °C";
 document.getElementById("salinity-val").textContent = "34.5 PSU";
@@ -128,15 +128,24 @@ function toggleInventory() {
   showInventory = !showInventory;
   inventoryScreen.classList.toggle("hidden", !showInventory);
   inventoryScreen.setAttribute("aria-hidden", String(!showInventory));
+  if (showInventory) renderInventory();
 }
 
 function catchCreature() {
-  if (state.caught.length >= 6) return;
+  if (state.caught.length >= 9) return; // grid fits 3x3
   const id = `AN-${(Math.random() * 1000) | 0}`;
-  state.caught.push(id);
-  const li = document.createElement("li");
-  li.textContent = id;
-  caughtListEl.appendChild(li);
+  const item = {
+    id,
+    name: "NOMBRE DEL ANIMAL",
+    heading: `${mod(state.camera.x * 5, 360)} *`,
+    depth: `${clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000).toFixed(0)} m`,
+    temp: "2.63 °C",
+    salinity: "34.5 PSU",
+    o2con: "183 uM",
+    o2sat: "54.3 %",
+  };
+  state.caught.push(item);
+  renderInventory();
 }
 
 function onKeyDown(event) {
@@ -204,3 +213,25 @@ window.addEventListener("keyup", onKeyUp);
 // Initial HUD and ticking time
 setInterval(updateHud, 1000);
 updateHud();
+
+function renderInventory() {
+  if (!inventoryGridEl) return;
+  inventoryGridEl.innerHTML = "";
+  state.caught.forEach((item) => {
+    const card = document.createElement("div");
+    card.className = "inv-card";
+    card.innerHTML = `
+      <div class=\"inv-thumb\"></div>
+      <div class=\"inv-title\">${item.name}</div>
+      <div class=\"inv-stats\">
+        <div class=\"inv-row\"><span class=\"inv-label\">HEADING</span><span class=\"inv-value\">${item.heading}</span></div>
+        <div class=\"inv-row\"><span class=\"inv-label\">DEPTH</span><span class=\"inv-value\">${item.depth}</span></div>
+        <div class=\"inv-row\"><span class=\"inv-label\">TEMP</span><span class=\"inv-value\">${item.temp}</span></div>
+        <div class=\"inv-row\"><span class=\"inv-label\">SALINITY</span><span class=\"inv-value\">${item.salinity}</span></div>
+        <div class=\"inv-row\"><span class=\"inv-label\">O2 CON.</span><span class=\"inv-value\">${item.o2con}</span></div>
+        <div class=\"inv-row\"><span class=\"inv-label\">O2 SAT.</span><span class=\"inv-value\">${item.o2sat}</span></div>
+      </div>
+    `;
+    inventoryGridEl.appendChild(card);
+  });
+}
