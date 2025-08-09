@@ -19,6 +19,7 @@ const keyElements = {
 };
 
 const stick = document.getElementById("stick");
+const stickShaft = document.querySelector(".stick-shaft");
 
 // HUD elements
 const headingEl = document.getElementById("heading-val");
@@ -107,6 +108,14 @@ function nudgeStick(dx, dy) {
   const x = clamp(dx * max, -max, max);
   const y = clamp(dy * max, -max, max);
   if (stick) stick.style.transform = `translate3d(${x}px, ${-y}px, 0)`;
+  if (stickShaft) {
+    // Move shaft with the same translation so cap+shaft behave as one object
+    // Add a subtle tilt based on input direction for depth illusion
+    const angle = clamp(Math.atan2(dy, dx) * (180 / Math.PI), -90, 90) || 0;
+    const magnitude = Math.min(Math.hypot(dx, dy), 1);
+    const tilt = (angle / 9) * (magnitude * 6);
+    stickShaft.style.transform = `translate3d(${x}px, ${-y}px, 0) rotate(${tilt}deg)`;
+  }
 }
 
 function highlight(key, active) {
