@@ -103,7 +103,7 @@ function mod(n, m) {
 }
 
 function nudgeStick(dx, dy) {
-  const max = 18; // px
+  const max = 28; // px for larger stick travel
   const x = clamp(dx * max, -max, max);
   const y = clamp(dy * max, -max, max);
   if (stick) stick.style.transform = `translate3d(${x}px, ${-y}px, 0)`;
