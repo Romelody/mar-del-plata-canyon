@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mar del Plata Canyon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="intro-screen" class="screen intro">
+        <h1 class="title">
+          <span>MAR&nbsp;&nbsp;DEL&nbsp;&nbsp;PLATA</span>
+          <span>CANYON</span>
+        </h1>
+        <button id="play-btn" class="play">PLAY</button>
+      </section>
+
+      <section id="game-screen" class="screen game hidden" aria-hidden="true">
+        <div id="game-ui" class="ui">
+          <div class="hud">
+            <div id="viewport" class="panel viewport">
+              <div class="telemetry">
+                <div class="t-row"><span class="t-label">HEADING</span><span id="heading-val" class="t-value">23 *</span></div>
+                <div class="t-row"><span class="t-label">DEPTH</span><span id="depth-val" class="t-value">1297 m</span></div>
+                <div class="t-row"><span class="t-label">TEMP</span><span id="temp-val" class="t-value">2.63 °C</span></div>
+                <div class="t-row"><span class="t-label">SALINITY</span><span id="salinity-val" class="t-value">34.5 PSU</span></div>
+                <div class="t-row"><span class="t-label">O2 CON.</span><span id="o2con-val" class="t-value">183 uM</span></div>
+                <div class="t-row"><span class="t-label">O2 SAT.</span><span id="o2sat-val" class="t-value">54.3 %</span></div>
+              </div>
+              <div id="utc-time" class="utc-time"></div>
+            </div>
+
+            <div class="side">
+              <div class="panel small">
+                <div class="label">NOMBRE DEL ANIMAL</div>
+                <div id="current-target" class="value muted">-</div>
+              </div>
+              <div class="panel small">
+                <div class="label">MUESTRAS</div>
+                <div id="samples-count" class="value">0 / 6</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="control-panel" class="control">
+            <div class="controls-left">
+              <button class="btn red key-q" data-key="q" title="Catch (Q)">Q</button>
+              <div class="wasd">
+                <button class="btn red key-w" data-key="w" title="Arm Up (W)">W</button>
+                <div class="row">
+                  <button class="btn red key-a" data-key="a" title="Arm Left (A)">A</button>
+                  <button class="btn red key-s" data-key="s" title="Arm Down (S)">S</button>
+                  <button class="btn red key-d" data-key="d" title="Arm Right (D)">D</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="joystick" aria-label="Camera Joystick (Arrows)">
+              <div class="stick-base"></div>
+              <div id="stick" class="stick"></div>
+            </div>
+
+            <div class="controls-right">
+              <button class="btn red key-p" data-key="p" title="Inventory (P)">P</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="inventory-screen" class="inventory hidden" aria-hidden="true">
+          <div class="inventory-header">
+            <div class="title">MUESTRAS CAPTURADAS</div>
+            <div class="hint">Pulsa P para volver</div>
+          </div>
+          <ul id="caught-list" class="caught-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <script src="./main.js" type="module"></script>
+  </body>
+  </html>
+
+
