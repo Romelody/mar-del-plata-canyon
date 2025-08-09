@@ -57,6 +57,8 @@ const state = {
   crane: { x: 0, y: 0 }, // pixel coords within viewport
   unlocked: new Set(),
   speciesEls: new Map(), // id -> HTMLElement (visible species in viewport)
+  specAnchorById: new Map(), // id -> anchor index
+  layoutOrder: [], // randomized order of anchor indices
 };
 
 // Base species templates
@@ -85,6 +87,34 @@ const SPECIES = [];
   });
 })();
 
+// Precompute a set of anchor offsets in a grid around center; then shuffle for this run
+const ANCHORS = [];
+(function seedAnchors() {
+  const rings = [0, 1, 2];
+  const step = 90; // px between anchors roughly
+  rings.forEach((r) => {
+    const radius = r * step;
+    const count = r === 0 ? 1 : 8;
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      ANCHORS.push({ dx: Math.cos(angle) * radius, dy: Math.sin(angle) * radius });
+    }
+  });
+})();
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function seedLayoutOrder() {
+  state.layoutOrder = shuffle(Array.from({ length: ANCHORS.length }, (_, i) => i));
+  state.specAnchorById = new Map();
+}
+
 function showGameScreen() {
   if (transitionTimeoutId !== null) {
     clearTimeout(transitionTimeoutId);
@@ -103,6 +133,7 @@ function showGameScreen() {
       setTimeout(() => {
         ensureCrane();
         centerCrane();
+        seedLayoutOrder();
         refreshVisibleSpecies();
         updateTargetingFeedback();
       }, 200);
@@ -321,6 +352,58 @@ function positionSpeciesElement(spec, el, camH, camD) {
   el.style.top = `${top}px`;
 }
 
+function computeSpeciesPosition(spec, camH, camD, bounds) {
+  const size = 120;
+  const padding = 24;
+  const centerX = bounds.width / 2 - size / 2;
+  const centerY = bounds.height / 2 - size / 2;
+  const dhSigned = getSignedAngularDelta(camH, spec.heading);
+  const ddSigned = spec.depth - camD;
+  const kx = (bounds.width / 2 - padding - size / 2) / 50;
+  const ky = (bounds.height / 2 - padding - size / 2) / 50;
+  const offsetX = dhSigned * kx;
+  const offsetY = ddSigned * ky;
+  // Anchor-based random layout to avoid exact collisions for this session
+  const specKey = spec.id;
+  let anchorIndex = state.specAnchorById.get(specKey);
+  if (anchorIndex === undefined) {
+    anchorIndex = state.layoutOrder[state.specAnchorById.size % state.layoutOrder.length];
+    state.specAnchorById.set(specKey, anchorIndex);
+  }
+  const anchor = ANCHORS[anchorIndex] || { dx: 0, dy: 0 };
+  const left = clamp(centerX + offsetX + anchor.dx * 0.2, padding, bounds.width - padding - size);
+  const top = clamp(centerY + offsetY + anchor.dy * 0.2, padding, bounds.height - padding - size);
+  return { left, top, size, padding };
+}
+
+function adjustForOverlap(placed, pos, bounds) {
+  const step = 16; // px nudge
+  const maxAttempts = 40;
+  let attempt = 0;
+  let angle = 0;
+  let radius = 0;
+  let { left, top, size, padding } = pos;
+  function overlaps(a, b) {
+    return !(
+      a.left + a.size <= b.left ||
+      b.left + b.size <= a.left ||
+      a.top + a.size <= b.top ||
+      b.top + b.size <= a.top
+    );
+  }
+  while (attempt < maxAttempts) {
+    const conflict = placed.find((p) => overlaps(p, { left, top, size }));
+    if (!conflict) break;
+    // Spiral nudge outward with random phase
+    angle += Math.PI / 3;
+    radius += step;
+    left = clamp(left + Math.cos(angle + attempt * 0.13) * radius, padding, bounds.width - padding - size);
+    top = clamp(top + Math.sin(angle + attempt * 0.11) * radius, padding, bounds.height - padding - size);
+    attempt += 1;
+  }
+  return { left, top, size };
+}
+
 function refreshVisibleSpecies() {
   if (!viewportEl) return;
   const camH = getCameraHeading();
@@ -328,6 +411,8 @@ function refreshVisibleSpecies() {
   const headingThreshold = 50; // degrees
   const depthThreshold = 50; // meters
 
+  const bounds = viewportEl.getBoundingClientRect();
+  const placed = [];
   let anyVisible = false;
   SPECIES.forEach((spec) => {
     const dh = getAngularDelta(camH, spec.heading);
@@ -336,11 +421,19 @@ function refreshVisibleSpecies() {
     const hasEl = state.speciesEls.has(spec.id);
     if (shouldShow && !hasEl) {
       const el = ensureSpeciesElement(spec);
-      positionSpeciesElement(spec, el, camH, camD);
+      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
+      const adj = adjustForOverlap(placed, pos, bounds);
+      el.style.left = `${adj.left}px`;
+      el.style.top = `${adj.top}px`;
+      placed.push(adj);
       anyVisible = true;
     } else if (shouldShow && hasEl) {
       const el = state.speciesEls.get(spec.id);
-      positionSpeciesElement(spec, el, camH, camD);
+      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
+      const adj = adjustForOverlap(placed, pos, bounds);
+      el.style.left = `${adj.left}px`;
+      el.style.top = `${adj.top}px`;
+      placed.push(adj);
       anyVisible = true;
     } else if (!shouldShow && hasEl) {
       removeSpeciesElement(spec.id);
@@ -361,7 +454,11 @@ function refreshVisibleSpecies() {
       .slice(0, 3);
     candidates.forEach(({ spec }) => {
       const el = ensureSpeciesElement(spec);
-      positionSpeciesElement(spec, el, camH, camD);
+      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
+      const adj = adjustForOverlap(placed, pos, bounds);
+      el.style.left = `${adj.left}px`;
+      el.style.top = `${adj.top}px`;
+      placed.push(adj);
     });
   }
 }
