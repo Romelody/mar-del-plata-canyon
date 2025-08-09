@@ -163,9 +163,9 @@ window.addEventListener("load", () => {
 
 // -------- Game logic --------
 function updateHud() {
-  // HEADING and DEPTH are controlled by player inputs (arrows for camera, WASD for arm)
-  headingEl.textContent = `${mod(state.camera.x * 5, 360)} *`;
-  const depthMeters = clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000);
+  // HEADING and DEPTH controlled by WASD (robotic arm)
+  headingEl.textContent = `${getCameraHeading()} *`;
+  const depthMeters = getCameraDepth();
   depthEl.textContent = `${depthMeters.toFixed(0)} m`;
   const d = new Date();
   const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
@@ -265,8 +265,8 @@ function catchCreature() {
     id,
     name: state.currentSpecies.name,
     image: state.currentSpecies.image,
-    heading: `${mod(state.camera.x * 5, 360)} *`,
-    depth: `${clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000).toFixed(0)} m`,
+    heading: `${getCameraHeading()} *`,
+    depth: `${getCameraDepth().toFixed(0)} m`,
     temp: "2.63 °C",
     salinity: "34.5 PSU",
     o2con: "183 uM",
@@ -288,14 +288,13 @@ function catchCreature() {
   setTimeout(spawnRandomSpecies, 600);
 }
 
-// Compute camera world values
+// Compute world values tied to WASD
 function getCameraHeading() {
-  return mod(state.camera.x * 5, 360);
+  return mod(state.arm.x * 5, 360);
 }
 
 function getCameraDepth() {
-  // Match HUD: camera and arm influence
-  return clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000);
+  return clamp(1200 + state.arm.y * 5, 0, 6000);
 }
 
 function getAngularDelta(a, b) {
