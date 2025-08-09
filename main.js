@@ -47,6 +47,7 @@ let showEncyclopedia = false;
 const state = {
   camera: { x: 0, y: 0 },
   arm: { x: 0, y: 0 },
+  parallax: { x: 0, y: 0 },
   caught: [],
   currentSpecies: null,
   currentSpeciesEl: null,
@@ -143,6 +144,19 @@ function nudgeStick(dx, dy) {
     const tilt = (angle / 9) * (magnitude * 6);
     stickShaft.style.transform = `translate3d(${x}px, ${-y}px, 0) rotate(${tilt}deg)`;
   }
+}
+
+// --- Background panning via WASD ---
+function panBackground(dx, dy) {
+  if (!viewportEl) return;
+  // Move in tile units; 24px per step feels OK, adjust as needed
+  const step = 24;
+  state.parallax.x += dx * step;
+  state.parallax.y += dy * step;
+  // Wrap positions to avoid growing numbers
+  const x = state.parallax.x % (step * 1000);
+  const y = state.parallax.y % (step * 1000);
+  viewportEl.style.backgroundPosition = `${-x}px ${-y}px`;
 }
 
 function highlight(key, active) {
@@ -350,18 +364,22 @@ function onKeyDown(event) {
     case "w":
     case "W":
       state.arm.y += 1;
+      panBackground(0, 1);
       break;
     case "s":
     case "S":
       state.arm.y -= 1;
+      panBackground(0, -1);
       break;
     case "a":
     case "A":
       state.arm.x -= 1;
+      panBackground(1, 0);
       break;
     case "d":
     case "D":
       state.arm.x += 1;
+      panBackground(-1, 0);
       break;
     case "q":
     case "Q":
@@ -419,8 +437,27 @@ function renderInventory() {
       imgEl.alt = item.name;
       thumbEl.appendChild(imgEl);
     }
+    // Actions: release (liberar)
+    const actions = document.createElement('div');
+    actions.className = 'inv-actions';
+    const releaseBtn = document.createElement('button');
+    releaseBtn.className = 'liberar-btn';
+    releaseBtn.textContent = 'LIBERAR';
+    releaseBtn.addEventListener('click', () => releaseItem(item.id));
+    actions.appendChild(releaseBtn);
+    card.appendChild(actions);
+
     inventoryGridEl.appendChild(card);
   });
+}
+
+function releaseItem(id) {
+  const index = state.caught.findIndex((i) => i.id === id);
+  if (index === -1) return;
+  state.caught.splice(index, 1);
+  renderInventory();
+  updateHud();
+  if (typeof renderEncyclopedia === 'function') renderEncyclopedia();
 }
 
 function renderEncyclopedia() {

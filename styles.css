@@ -130,6 +130,10 @@ body {
 .viewport {
   height: 100%;
   position: relative;
+  background-image: url('./background.png');
+  background-repeat: repeat;
+  background-position: 0 0;
+  background-size: auto;
 }
 
 /* Spawned species visuals */
@@ -414,7 +418,7 @@ body {
 .inv-card {
   display: grid;
   grid-template-columns: 160px 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto 1fr auto;
   column-gap: 28px;
   row-gap: 12px;
 }
@@ -452,5 +456,29 @@ body {
 .inv-row { display: grid; grid-template-columns: 90px 1fr; gap: 18px; }
 .inv-label { letter-spacing: 0.12em; }
 .inv-value { color: #ffffff; }
+
+.inv-actions {
+  grid-column: 2;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.liberar-btn {
+  background: transparent;
+  border: 1px solid #3a3a47;
+  color: var(--muted);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.liberar-btn:hover {
+  color: #ffffff;
+  border-color: #5a5a6b;
+}
 
 
