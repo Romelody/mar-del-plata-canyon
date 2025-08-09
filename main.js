@@ -407,59 +407,46 @@ function refreshVisibleSpecies() {
   if (!viewportEl) return;
   const camH = getCameraHeading();
   const camD = getCameraDepth();
-  const headingThreshold = 50; // degrees
-  const depthThreshold = 50; // meters
+  // Tunable window and cap
+  const H_WIN = 40; // degrees
+  const D_WIN = 80; // meters
+  const MAX_VISIBLE = 4;
 
   const bounds = viewportEl.getBoundingClientRect();
   const placed = [];
-  let anyVisible = false;
-  SPECIES.forEach((spec) => {
+
+  // Build and rank candidates
+  const scored = SPECIES.map((spec) => {
     const dh = getAngularDelta(camH, spec.heading);
     const dd = Math.abs(camD - spec.depth);
-    const shouldShow = dh <= headingThreshold || dd <= depthThreshold;
-    const hasEl = state.speciesEls.has(spec.id);
-    if (shouldShow && !hasEl) {
-      const el = ensureSpeciesElement(spec);
-      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
-      const adj = adjustForOverlap(placed, pos, bounds);
-      el.style.left = `${adj.left}px`;
-      el.style.top = `${adj.top}px`;
-      placed.push(adj);
-      anyVisible = true;
-    } else if (shouldShow && hasEl) {
-      const el = state.speciesEls.get(spec.id);
-      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
-      const adj = adjustForOverlap(placed, pos, bounds);
-      el.style.left = `${adj.left}px`;
-      el.style.top = `${adj.top}px`;
-      placed.push(adj);
-      anyVisible = true;
-    } else if (!shouldShow && hasEl) {
-      removeSpeciesElement(spec.id);
-    }
+    const score = Math.hypot(dh / H_WIN, dd / D_WIN);
+    return { spec, dh, dd, score };
+  });
+  let selected = scored
+    .filter((x) => x.dh <= H_WIN || x.dd <= D_WIN)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, MAX_VISIBLE);
+  // Fallback: ensure at least one is visible
+  if (selected.length === 0) {
+    selected = scored.sort((a, b) => a.score - b.score).slice(0, 1);
+  }
+
+  const selectedIds = new Set(selected.map((s) => s.spec.id));
+
+  // Remove any non-selected currently visible
+  Array.from(state.speciesEls.keys()).forEach((id) => {
+    if (!selectedIds.has(id)) removeSpeciesElement(id);
   });
 
-  // Fallback: if nothing visible, guarantee at least one species appears when near by
-  if (!anyVisible) {
-    // Show up to 3 nearest candidates under relaxed window to improve gameplay
-    const candidates = SPECIES.map((spec) => {
-      const dh = getAngularDelta(camH, spec.heading);
-      const dd = Math.abs(camD - spec.depth);
-      const score = Math.min(dh, 50) + Math.min(dd, 50);
-      return { spec, dh, dd, score };
-    })
-      .filter((x) => x.dh <= 50 || x.dd <= 50)
-      .sort((a, b) => a.score - b.score)
-      .slice(0, 3);
-    candidates.forEach(({ spec }) => {
-      const el = ensureSpeciesElement(spec);
-      const pos = computeSpeciesPosition(spec, camH, camD, bounds);
-      const adj = adjustForOverlap(placed, pos, bounds);
-      el.style.left = `${adj.left}px`;
-      el.style.top = `${adj.top}px`;
-      placed.push(adj);
-    });
-  }
+  // Place selected species without overlap
+  selected.forEach(({ spec }) => {
+    const el = ensureSpeciesElement(spec);
+    const pos = computeSpeciesPosition(spec, camH, camD, bounds);
+    const adj = adjustForOverlap(placed, pos, bounds);
+    el.style.left = `${adj.left}px`;
+    el.style.top = `${adj.top}px`;
+    placed.push(adj);
+  });
 }
 
 // ---- Crane (crosshair) mechanics ----
