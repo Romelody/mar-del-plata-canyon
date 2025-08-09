@@ -140,10 +140,16 @@ body {
   object-fit: contain;
   filter: drop-shadow(0 8px 20px rgba(0,0,0,0.45));
   animation: spawnIn 200ms ease-out;
+  z-index: 2;
 }
 
 .viewport .species.despawn {
   animation: despawnOut 160ms ease-in forwards;
+}
+
+.viewport .species.targeted {
+  outline: 2px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -4px;
 }
 
 @keyframes spawnIn {
@@ -153,6 +159,18 @@ body {
 
 @keyframes despawnOut {
   to { transform: scale(0.85); opacity: 0; filter: blur(1px); }
+}
+
+/* Crane crosshair */
+.crane {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px #d66, inset 0 0 0 4px rgba(0,0,0,0.55);
+  background: radial-gradient(circle at 50% 50%, rgba(214,102,102,0.2), rgba(0,0,0,0) 60%);
+  pointer-events: none;
+  z-index: 3;
 }
 
 .telemetry {

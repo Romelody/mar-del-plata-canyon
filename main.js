@@ -21,6 +21,7 @@ const keyElements = {
 const stick = document.getElementById("stick");
 const stickShaft = document.querySelector(".stick-shaft");
 const viewportEl = document.getElementById("viewport");
+let craneEl = null;
 
 // HUD elements
 const headingEl = document.getElementById("heading-val");
@@ -44,6 +45,7 @@ const state = {
   caught: [],
   currentSpecies: null,
   currentSpeciesEl: null,
+  crane: { x: 0, y: 0 }, // pixel coords within viewport
 };
 
 // Available species and their images
@@ -70,7 +72,12 @@ function showGameScreen() {
       gameScreen.classList.add("fade-in");
       gameScreen.setAttribute("aria-hidden", "false");
       // Spawn first species shortly after the game becomes visible
-      setTimeout(spawnRandomSpecies, 200);
+      setTimeout(() => {
+        ensureCrane();
+        centerCrane();
+        spawnRandomSpecies();
+        updateTargetingFeedback();
+      }, 200);
     },
     { once: true }
   );
@@ -149,6 +156,8 @@ function toggleInventory() {
 function catchCreature() {
   // Only catch if a species is currently spawned
   if (!state.currentSpeciesEl || !state.currentSpecies) return;
+  // Require crane to be pointing at species
+  if (!isCranePointingAtSpecies()) return;
   if (state.caught.length >= 9) return; // grid fits 3x3
 
   // Play a small despawn animation and remove from viewport
@@ -208,7 +217,63 @@ function spawnRandomSpecies() {
 
   state.currentSpecies = species;
   state.currentSpeciesEl = img;
-  if (currentTargetEl) currentTargetEl.textContent = species.name;
+  updateTargetingFeedback();
+}
+
+// ---- Crane (crosshair) mechanics ----
+function ensureCrane() {
+  if (craneEl || !viewportEl) return;
+  const el = document.createElement("div");
+  el.className = "crane";
+  el.setAttribute("aria-hidden", "true");
+  viewportEl.appendChild(el);
+  craneEl = el;
+}
+
+function centerCrane() {
+  if (!viewportEl) return;
+  ensureCrane();
+  const rect = viewportEl.getBoundingClientRect();
+  positionCrane(rect.width / 2, rect.height / 2);
+}
+
+function positionCrane(x, y) {
+  if (!craneEl || !viewportEl) return;
+  const rect = viewportEl.getBoundingClientRect();
+  const size = 28; // crane size in CSS
+  const clampedX = clamp(x, 0 + size / 2, rect.width - size / 2);
+  const clampedY = clamp(y, 0 + size / 2, rect.height - size / 2);
+  state.crane.x = clampedX;
+  state.crane.y = clampedY;
+  // Convert center coords to top-left for absolute positioning
+  craneEl.style.left = `${clampedX - size / 2}px`;
+  craneEl.style.top = `${clampedY - size / 2}px`;
+  updateTargetingFeedback();
+}
+
+function moveCrane(dx, dy) {
+  ensureCrane();
+  const step = 20; // px per keypress
+  positionCrane(state.crane.x + dx * step, state.crane.y + dy * step);
+}
+
+function isCranePointingAtSpecies() {
+  if (!craneEl || !state.currentSpeciesEl) return false;
+  const c = craneEl.getBoundingClientRect();
+  const s = state.currentSpeciesEl.getBoundingClientRect();
+  const cx = c.left + c.width / 2;
+  const cy = c.top + c.height / 2;
+  return cx >= s.left && cx <= s.right && cy >= s.top && cy <= s.bottom;
+}
+
+function updateTargetingFeedback() {
+  if (!state.currentSpeciesEl) {
+    if (currentTargetEl) currentTargetEl.textContent = "-";
+    return;
+  }
+  const pointing = isCranePointingAtSpecies();
+  state.currentSpeciesEl.classList.toggle("targeted", pointing);
+  if (currentTargetEl) currentTargetEl.textContent = pointing ? state.currentSpecies.name : "-";
 }
 
 function onKeyDown(event) {
@@ -220,18 +285,22 @@ function onKeyDown(event) {
   switch (key) {
     case "ArrowUp":
       state.camera.y += 1;
+      moveCrane(0, -1);
       nudgeStick(0, 1);
       break;
     case "ArrowDown":
       state.camera.y -= 1;
+      moveCrane(0, 1);
       nudgeStick(0, -1);
       break;
     case "ArrowLeft":
       state.camera.x -= 1;
+      moveCrane(-1, 0);
       nudgeStick(-1, 0);
       break;
     case "ArrowRight":
       state.camera.x += 1;
+      moveCrane(1, 0);
       nudgeStick(1, 0);
       break;
     case "w":
