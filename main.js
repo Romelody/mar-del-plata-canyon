@@ -20,6 +20,7 @@ const keyElements = {
 
 const stick = document.getElementById("stick");
 const stickShaft = document.querySelector(".stick-shaft");
+const viewportEl = document.getElementById("viewport");
 
 // HUD elements
 const headingEl = document.getElementById("heading-val");
@@ -27,6 +28,7 @@ const depthEl = document.getElementById("depth-val");
 const utcTimeEl = document.getElementById("utc-time");
 const samplesCountEl = document.getElementById("samples-count");
 const inventoryGridEl = document.getElementById("inventory-grid");
+const currentTargetEl = document.getElementById("current-target");
 // Static ocean status values (hard-coded)
 document.getElementById("temp-val").textContent = "2.63 °C";
 document.getElementById("salinity-val").textContent = "34.5 PSU";
@@ -40,7 +42,18 @@ const state = {
   camera: { x: 0, y: 0 },
   arm: { x: 0, y: 0 },
   caught: [],
+  currentSpecies: null,
+  currentSpeciesEl: null,
 };
+
+// Available species and their images
+const SPECIES = [
+  { id: "batatita", name: "BATATITA", image: "./species/batatita.png" },
+  { id: "el_ojo_del_abismo", name: "EL OJO DEL ABISMO", image: "./species/el_ojo_del_abismo.png" },
+  { id: "estrella_culona", name: "ESTRELLA CULONA", image: "./species/estrella_culona.png" },
+  { id: "limon", name: "LIMÓN", image: "./species/limon.png" },
+  { id: "pececito", name: "PECECITO", image: "./species/pececito.png" },
+];
 
 function showGameScreen() {
   if (transitionTimeoutId !== null) {
@@ -56,6 +69,8 @@ function showGameScreen() {
       gameScreen.classList.remove("hidden");
       gameScreen.classList.add("fade-in");
       gameScreen.setAttribute("aria-hidden", "false");
+      // Spawn first species shortly after the game becomes visible
+      setTimeout(spawnRandomSpecies, 200);
     },
     { once: true }
   );
@@ -132,11 +147,22 @@ function toggleInventory() {
 }
 
 function catchCreature() {
+  // Only catch if a species is currently spawned
+  if (!state.currentSpeciesEl || !state.currentSpecies) return;
   if (state.caught.length >= 9) return; // grid fits 3x3
+
+  // Play a small despawn animation and remove from viewport
+  state.currentSpeciesEl.classList.add("despawn");
+  const speciesEl = state.currentSpeciesEl;
+  setTimeout(() => {
+    speciesEl.remove();
+  }, 180);
+
   const id = `AN-${(Math.random() * 1000) | 0}`;
   const item = {
     id,
-    name: "NOMBRE DEL ANIMAL",
+    name: state.currentSpecies.name,
+    image: state.currentSpecies.image,
     heading: `${mod(state.camera.x * 5, 360)} *`,
     depth: `${clamp(1200 + state.camera.y * 5 + state.arm.y * 2, 0, 6000).toFixed(0)} m`,
     temp: "2.63 °C",
@@ -145,7 +171,44 @@ function catchCreature() {
     o2sat: "54.3 %",
   };
   state.caught.push(item);
+  updateHud();
+
+  // Clear current target and schedule next spawn
+  state.currentSpecies = null;
+  state.currentSpeciesEl = null;
+  if (currentTargetEl) currentTargetEl.textContent = "-";
+
   renderInventory();
+  setTimeout(spawnRandomSpecies, 600);
+}
+
+function spawnRandomSpecies() {
+  if (!viewportEl) return;
+  // Avoid double-spawn
+  if (state.currentSpeciesEl) return;
+
+  const species = SPECIES[(Math.random() * SPECIES.length) | 0];
+  const img = new Image();
+  img.src = species.image;
+  img.alt = species.name;
+  img.className = "species";
+
+  // Place within the viewport bounds with padding
+  const bounds = viewportEl.getBoundingClientRect();
+  const size = 120; // px visual size
+  const padding = 24;
+  const maxX = Math.max(bounds.width - size - padding * 2, 0);
+  const maxY = Math.max(bounds.height - size - padding * 2, 0);
+  const x = padding + Math.random() * maxX;
+  const y = padding + Math.random() * maxY;
+  img.style.left = `${x}px`;
+  img.style.top = `${y}px`;
+
+  viewportEl.appendChild(img);
+
+  state.currentSpecies = species;
+  state.currentSpeciesEl = img;
+  if (currentTargetEl) currentTargetEl.textContent = species.name;
 }
 
 function onKeyDown(event) {
@@ -232,6 +295,13 @@ function renderInventory() {
         <div class=\"inv-row\"><span class=\"inv-label\">O2 SAT.</span><span class=\"inv-value\">${item.o2sat}</span></div>
       </div>
     `;
+    const thumbEl = card.querySelector('.inv-thumb');
+    if (item.image && thumbEl) {
+      const imgEl = new Image();
+      imgEl.src = item.image;
+      imgEl.alt = item.name;
+      thumbEl.appendChild(imgEl);
+    }
     inventoryGridEl.appendChild(card);
   });
 }
