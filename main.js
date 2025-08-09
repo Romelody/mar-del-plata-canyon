@@ -11,7 +11,7 @@ const keyElements = {
   a: document.querySelector(".key-a"),
   s: document.querySelector(".key-s"),
   d: document.querySelector(".key-d"),
-  p: document.querySelector(".key-p"),
+  e: document.querySelector(".key-e"),
   ArrowUp: document.querySelector(".key-arrow-up"),
   ArrowDown: document.querySelector(".key-arrow-down"),
   ArrowLeft: document.querySelector(".key-arrow-left"),
@@ -254,8 +254,8 @@ function onKeyDown(event) {
     case "Q":
       catchCreature();
       break;
-    case "p":
-    case "P":
+    case "e":
+    case "E":
       toggleInventory();
       break;
     default:
