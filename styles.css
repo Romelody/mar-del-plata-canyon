@@ -222,6 +222,29 @@ body {
   color: var(--muted);
 }
 
+/* Current target panel thumbnail */
+.target-thumb {
+  width: 100%;
+  height: 84px;
+  border-radius: 4px;
+  border: 2px solid #242235;
+  background: linear-gradient(180deg, #172031, #1d2537);
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+}
+
+.target-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.target-thumb.grey img {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.75;
+}
+
 .control {
   margin-top: auto;
   background: linear-gradient(180deg, #2b2a32 0%, #2a2a35 60%, #2e2d3a 100%);

@@ -33,6 +33,7 @@ const samplesCountEl = document.getElementById("samples-count");
 const inventoryGridEl = document.getElementById("inventory-grid");
 const encyclopediaGridEl = document.getElementById("encyclopedia-grid");
 const currentTargetEl = document.getElementById("current-target");
+const currentTargetThumbEl = document.getElementById("current-target-thumb");
 // Static ocean status values (hard-coded)
 document.getElementById("temp-val").textContent = "2.63 °C";
 document.getElementById("salinity-val").textContent = "34.5 PSU";
@@ -295,11 +296,28 @@ function isCranePointingAtSpecies() {
 function updateTargetingFeedback() {
   if (!state.currentSpeciesEl) {
     if (currentTargetEl) currentTargetEl.textContent = "-";
+    if (currentTargetThumbEl) currentTargetThumbEl.innerHTML = "";
     return;
   }
   const pointing = isCranePointingAtSpecies();
   state.currentSpeciesEl.classList.toggle("targeted", pointing);
-  if (currentTargetEl) currentTargetEl.textContent = pointing ? state.currentSpecies.name : "-";
+  if (currentTargetEl) {
+    const isUnlocked = state.caught.some((i) => i.image === state.currentSpecies.image || i.name === state.currentSpecies.name);
+    currentTargetEl.textContent = pointing ? (isUnlocked ? state.currentSpecies.name : "???????") : "-";
+  }
+  if (currentTargetThumbEl) {
+    currentTargetThumbEl.innerHTML = "";
+    if (pointing) {
+      const img = new Image();
+      img.src = state.currentSpecies.image;
+      img.alt = state.currentSpecies.name;
+      currentTargetThumbEl.appendChild(img);
+      const isUnlocked = state.caught.some((i) => i.image === state.currentSpecies.image || i.name === state.currentSpecies.name);
+      currentTargetThumbEl.classList.toggle('grey', !isUnlocked);
+    } else {
+      currentTargetThumbEl.classList.remove('grey');
+    }
+  }
 }
 
 function onKeyDown(event) {
