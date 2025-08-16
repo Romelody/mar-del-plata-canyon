@@ -195,7 +195,25 @@ function initializeEventListeners() {
   window.addEventListener("keyup", onKeyUp);
 
   // Winner overlay buttons
-  
+  if (winnerContinueBtn) {
+    winnerContinueBtn.addEventListener('click', () => {
+      winnerOverlayEl.classList.add('hidden');
+      winnerOverlayEl.setAttribute('aria-hidden', 'true');
+    });
+  }
+
+  if (winnerResetBtn) {
+    winnerResetBtn.addEventListener('click', () => {
+      // Reset progress: inventory and unlocks
+      state.caught = [];
+      state.unlocked = new Set();
+      renderInventory();
+      if (typeof renderEncyclopedia === 'function') renderEncyclopedia();
+      updateHud();
+      winnerOverlayEl.classList.add('hidden');
+      winnerOverlayEl.setAttribute('aria-hidden', 'true');
+    });
+  }
 
   // Initial HUD and ticking time
   setInterval(updateHud, 1000);
