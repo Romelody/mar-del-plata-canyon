@@ -12,10 +12,10 @@
   <body>
     <main id="app">
       <section id="intro-screen" class="screen intro">
-        <h1 class="title">
-          <span>MAR&nbsp;&nbsp;DEL&nbsp;&nbsp;PLATA</span>
-          <span>CANYON</span>
-        </h1>
+        <div class="banner"></div>
+        <div class="title">
+          <img src="./assets/logo.png" alt="Mar del Plata Canyon" class="logo">
+        </div>
         <button id="play-btn" class="play">PLAY</button>
       </section>
 
@@ -49,13 +49,28 @@
 
           <div id="control-panel" class="control">
             <div class="controls-left">
-              <button class="btn red key-q" data-key="q" title="Catch (Q)">Q</button>
+              <button class="btn key-q" data-key="q" title="Catch (Q)">
+                <img src="./assets/hud/red-stand.png" alt="Q" class="btn-stand">
+                <img src="./assets/hud/red-press.png" alt="Q" class="btn-press">
+              </button>
               <div class="wasd">
-                <button class="btn red key-w" data-key="w" title="Arm Up (W)">W</button>
+                <button class="btn key-w" data-key="w" title="Arm Up (W)">
+                  <img src="./assets/hud/orange-stand.png" alt="W" class="btn-stand">
+                  <img src="./assets/hud/orange-press.png" alt="W" class="btn-press">
+                </button>
                 <div class="row">
-                  <button class="btn red key-a" data-key="a" title="Arm Left (A)">A</button>
-                  <button class="btn red key-s" data-key="s" title="Arm Down (S)">S</button>
-                  <button class="btn red key-d" data-key="d" title="Arm Right (D)">D</button>
+                  <button class="btn key-a" data-key="a" title="Arm Left (A)">
+                    <img src="./assets/hud/orange-stand.png" alt="A" class="btn-stand">
+                    <img src="./assets/hud/orange-press.png" alt="A" class="btn-press">
+                  </button>
+                  <button class="btn key-s" data-key="s" title="Arm Down (S)">
+                    <img src="./assets/hud/orange-stand.png" alt="S" class="btn-stand">
+                    <img src="./assets/hud/orange-press.png" alt="S" class="btn-press">
+                  </button>
+                  <button class="btn key-d" data-key="d" title="Arm Right (D)">
+                    <img src="./assets/hud/orange-stand.png" alt="D" class="btn-stand">
+                    <img src="./assets/hud/orange-press.png" alt="D" class="btn-press">
+                  </button>
                 </div>
               </div>
             </div>
@@ -67,8 +82,14 @@
             </div>
 
             <div class="controls-right">
-              <button class="btn red key-i" data-key="i" title="Inventory (I)">I</button>
-              <button class="btn red key-e" data-key="e" title="Enciclopedia (E)">E</button>
+              <button class="btn key-i" data-key="i" title="Inventory (I)">
+                <img src="./assets/hud/green-stand.png" alt="I" class="btn-stand">
+                <img src="./assets/hud/green-press.png" alt="I" class="btn-press">
+              </button>
+              <button class="btn key-e" data-key="e" title="Enciclopedia (E)">
+                <img src="./assets/hud/blue-stand.png" alt="E" class="btn-stand">
+                <img src="./assets/hud/blue-press.png" alt="E" class="btn-press">
+              </button>
             </div>
           </div>
         </div>

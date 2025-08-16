@@ -1,47 +1,73 @@
-// Screen sections
-const introScreen = document.getElementById("intro-screen");
-const gameScreen = document.getElementById("game-screen");
-const playButton = document.getElementById("play-btn");
-const inventoryScreen = document.getElementById("inventory-screen");
-const encyclopediaScreen = document.getElementById("encyclopedia-screen");
+// DOM elements - will be initialized when DOM is ready
+let introScreen, gameScreen, playButton, inventoryScreen, encyclopediaScreen;
+let keyElements, stick, stickShaft, viewportEl, craneEl;
+let headingEl, depthEl, utcTimeEl, samplesCountEl, inventoryGridEl, encyclopediaGridEl;
+let winnerOverlayEl, winnerContinueBtn, winnerResetBtn, currentTargetEl, currentTargetThumbEl;
 
-// Key UI elements
-const keyElements = {
-  q: document.querySelector(".key-q"),
-  w: document.querySelector(".key-w"),
-  a: document.querySelector(".key-a"),
-  s: document.querySelector(".key-s"),
-  d: document.querySelector(".key-d"),
-  e: document.querySelector(".key-e"),
-  i: document.querySelector(".key-i"),
-  ArrowUp: document.querySelector(".key-arrow-up"),
-  ArrowDown: document.querySelector(".key-arrow-down"),
-  ArrowLeft: document.querySelector(".key-arrow-left"),
-  ArrowRight: document.querySelector(".key-arrow-right"),
-};
+// Initialize DOM elements when document is ready
+function initializeDOMElements() {
+  // Screen sections
+  introScreen = document.getElementById("intro-screen");
+  gameScreen = document.getElementById("game-screen");
+  playButton = document.getElementById("play-btn");
+  inventoryScreen = document.getElementById("inventory-screen");
+  encyclopediaScreen = document.getElementById("encyclopedia-screen");
 
-const stick = document.getElementById("stick");
-const stickShaft = document.querySelector(".stick-shaft");
-const viewportEl = document.getElementById("viewport");
-let craneEl = null;
+  // Validate critical elements
+  if (!playButton) {
+    throw new Error('Play button not found');
+  }
+  if (!introScreen) {
+    throw new Error('Intro screen not found');
+  }
+  if (!gameScreen) {
+    throw new Error('Game screen not found');
+  }
 
-// HUD elements
-const headingEl = document.getElementById("heading-val");
-const depthEl = document.getElementById("depth-val");
-const utcTimeEl = document.getElementById("utc-time");
-const samplesCountEl = document.getElementById("samples-count");
-const inventoryGridEl = document.getElementById("inventory-grid");
-const encyclopediaGridEl = document.getElementById("encyclopedia-grid");
-const winnerOverlayEl = document.getElementById("winner-overlay");
-const winnerContinueBtn = document.getElementById("winner-continue");
-const winnerResetBtn = document.getElementById("winner-reset");
-const currentTargetEl = document.getElementById("current-target");
-const currentTargetThumbEl = document.getElementById("current-target-thumb");
-// Static ocean status values (hard-coded)
-document.getElementById("temp-val").textContent = "2.63 °C";
-document.getElementById("salinity-val").textContent = "34.5 PSU";
-document.getElementById("o2con-val").textContent = "183 uM";
-document.getElementById("o2sat-val").textContent = "54.3 %";
+  // Key UI elements
+  keyElements = {
+    q: document.querySelector(".key-q"),
+    w: document.querySelector(".key-w"),
+    a: document.querySelector(".key-a"),
+    s: document.querySelector(".key-s"),
+    d: document.querySelector(".key-d"),
+    e: document.querySelector(".key-e"),
+    i: document.querySelector(".key-i"),
+    ArrowUp: document.querySelector(".key-arrow-up"),
+    ArrowDown: document.querySelector(".key-arrow-down"),
+    ArrowLeft: document.querySelector(".key-arrow-left"),
+    ArrowRight: document.querySelector(".key-arrow-right"),
+  };
+
+  stick = document.getElementById("stick");
+  stickShaft = document.querySelector(".stick-shaft");
+  viewportEl = document.getElementById("viewport");
+  craneEl = null;
+
+  // HUD elements
+  headingEl = document.getElementById("heading-val");
+  depthEl = document.getElementById("depth-val");
+  utcTimeEl = document.getElementById("utc-time");
+  samplesCountEl = document.getElementById("samples-count");
+  inventoryGridEl = document.getElementById("inventory-grid");
+  encyclopediaGridEl = document.getElementById("encyclopedia-grid");
+  winnerOverlayEl = document.getElementById("winner-overlay");
+  winnerContinueBtn = document.getElementById("winner-continue");
+  winnerResetBtn = document.getElementById("winner-reset");
+  currentTargetEl = document.getElementById("current-target");
+  currentTargetThumbEl = document.getElementById("current-target-thumb");
+  
+  // Static ocean status values (hard-coded)
+  const tempEl = document.getElementById("temp-val");
+  const salinityEl = document.getElementById("salinity-val");
+  const o2conEl = document.getElementById("o2con-val");
+  const o2satEl = document.getElementById("o2sat-val");
+  
+  if (tempEl) tempEl.textContent = "2.63 °C";
+  if (salinityEl) salinityEl.textContent = "34.5 PSU";
+  if (o2conEl) o2conEl.textContent = "183 uM";
+  if (o2satEl) o2satEl.textContent = "54.3 %";
+}
 
 let transitionTimeoutId = null;
 let showInventory = false;
@@ -142,23 +168,50 @@ function showGameScreen() {
   );
 }
 
-// Remove auto-start timer from previous version
-
-// Allow manual start via PLAY
-playButton.addEventListener("click", showGameScreen);
-
-// Keyboard accessibility during intro: Enter/Space triggers play
-introScreen.addEventListener("keydown", (event) => {
-  const key = event.key;
-  if (key === "Enter" || key === " ") {
-    event.preventDefault();
-    showGameScreen();
+// Initialize event listeners after DOM is ready
+function initializeEventListeners() {
+  // Allow manual start via PLAY
+  if (playButton) {
+    playButton.addEventListener("click", showGameScreen);
   }
-});
 
-// Focus play by default for fast Enter press
-window.addEventListener("load", () => {
-  playButton.focus({ preventScroll: true });
+  // Keyboard accessibility during intro: Enter/Space triggers play
+  if (introScreen) {
+    introScreen.addEventListener("keydown", (event) => {
+      const key = event.key;
+      if (key === "Enter" || key === " ") {
+        event.preventDefault();
+        showGameScreen();
+      }
+    });
+  }
+
+  // Focus play by default for fast Enter press
+  if (playButton) {
+    playButton.focus({ preventScroll: true });
+  }
+
+  // Game keyboard controls
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+
+  // Winner overlay buttons
+  
+
+  // Initial HUD and ticking time
+  setInterval(updateHud, 1000);
+  updateHud();
+}
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    initializeDOMElements();
+    initializeEventListeners();
+    console.log('Game initialized successfully');
+  } catch (error) {
+    console.error('Error initializing game:', error);
+  }
 });
 
 // -------- Game logic --------
@@ -613,12 +666,7 @@ function onKeyUp(event) {
   if (key.startsWith("Arrow")) nudgeStick(0, 0);
 }
 
-window.addEventListener("keydown", onKeyDown);
-window.addEventListener("keyup", onKeyUp);
 
-// Initial HUD and ticking time
-setInterval(updateHud, 1000);
-updateHud();
 
 function renderInventory() {
   if (!inventoryGridEl) return;
