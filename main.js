@@ -1,6 +1,6 @@
 // DOM elements - will be initialized when DOM is ready
 let introScreen, gameScreen, playButton, inventoryScreen, encyclopediaScreen;
-let keyElements, stick, stickShaft, viewportEl, craneEl;
+let keyElements, stick, viewportEl, craneEl;
 let headingEl, depthEl, utcTimeEl, samplesCountEl, inventoryGridEl, encyclopediaGridEl;
 let winnerOverlayEl, winnerContinueBtn, winnerResetBtn, currentTargetEl, currentTargetThumbEl;
 
@@ -40,7 +40,6 @@ function initializeDOMElements() {
   };
 
   stick = document.getElementById("stick");
-  stickShaft = document.querySelector(".stick-shaft");
   viewportEl = document.getElementById("viewport");
   craneEl = null;
 
@@ -238,18 +237,32 @@ function mod(n, m) {
 }
 
 function nudgeStick(dx, dy) {
-  const max = 28; // px for larger stick travel
-  const x = clamp(dx * max, -max, max);
-  const y = clamp(dy * max, -max, max);
-  if (stick) stick.style.transform = `translate3d(${x}px, ${-y}px, 0)`;
-  if (stickShaft) {
-    // Move shaft with the same translation so cap+shaft behave as one object
-    // Add a subtle tilt based on input direction for depth illusion
-    const angle = clamp(Math.atan2(dy, dx) * (180 / Math.PI), -90, 90) || 0;
-    const magnitude = Math.min(Math.hypot(dx, dy), 1);
-    const tilt = (angle / 9) * (magnitude * 6);
-    stickShaft.style.transform = `translate3d(${x}px, ${-y}px, 0) rotate(${tilt}deg)`;
+  if (!stick) return;
+  
+  // Determine which image to show based on input direction
+  let imageName = 'stand'; // default state
+  
+  if (dx !== 0 || dy !== 0) {
+    if (dx === 0 && dy > 0) {
+      imageName = 'up';
+    } else if (dx === 0 && dy < 0) {
+      imageName = 'back';
+    } else if (dx < 0 && dy === 0) {
+      imageName = 'left';
+    } else if (dx > 0 && dy === 0) {
+      imageName = 'right';
+    } else if (dx < 0 && dy > 0) {
+      imageName = 'side';
+    } else if (dx > 0 && dy > 0) {
+      imageName = 'side';
+    } else if (dx < 0 && dy < 0) {
+      imageName = 'side';
+    } else if (dx > 0 && dy < 0) {
+      imageName = 'side';
+    }
   }
+  
+  stick.src = `./assets/hud/${imageName}.png`;
 }
 
 // --- Background panning via WASD ---
