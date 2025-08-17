@@ -23,6 +23,13 @@
         <div id="game-ui" class="ui">
           <div class="hud">
             <div id="viewport" class="panel viewport">
+              <div class="viewport-border">
+                <div class="border-corner border-corner-tl"></div>
+                <div class="border-corner border-corner-tr"></div>
+                <div class="border-corner border-corner-bl"></div>
+                <div class="border-corner border-corner-br"></div>
+                <!-- Border sides will be generated dynamically by JavaScript -->
+              </div>
               <div class="telemetry">
                 <div class="t-row"><span class="t-label">HEADING</span><span id="heading-val" class="t-value">23 *</span></div>
                 <div class="t-row"><span class="t-label">DEPTH</span><span id="depth-val" class="t-value">1297 m</span></div>
@@ -122,7 +129,7 @@
       </section>
     </main>
 
-    <script src="./main.js" type="module"></script>
+    <script src="./main.js?v=1"></script>
   </body>
   </html>
 

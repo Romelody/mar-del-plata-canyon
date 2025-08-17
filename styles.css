@@ -74,7 +74,7 @@ body {
   font-size: clamp(14px, 2.2vw, 22px);
   letter-spacing: 0.15em;
   cursor: pointer;
-  padding: 0.75rem 1rem;
+  padding: 0.25rem 0.5rem;
 }
 
 .play:focus-visible {
@@ -133,7 +133,6 @@ body {
 }
 
 .panel {
-  border: 2px solid #2f2e35;
   background: #26252c;
   border-radius: 4px;
 }
@@ -145,6 +144,86 @@ body {
   background-repeat: repeat;
   background-position: 0 0;
   background-size: 480px 480px;
+  overflow: hidden;
+  border: none;
+  border-radius: 16px;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+/* Viewport Border System */
+.viewport-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.border-corner {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background-image: url('./assets/hud/corner.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 2;
+}
+
+.border-corner-tl {
+  top: 0;
+  left: 0;
+}
+
+.border-corner-tr {
+  top: 0;
+  right: 0;
+  transform: rotate(90deg);
+}
+
+.border-corner-bl {
+  bottom: 0;
+  left: 0;
+  transform: rotate(-90deg);
+}
+
+.border-corner-br {
+  bottom: 0;
+  right: 0;
+  transform: rotate(180deg);
+}
+
+.border-side {
+  position: absolute;
+  background-image: url('./assets/hud/side.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 1;
+  width: 120px;
+  height: 120px;
+}
+
+.border-side-top {
+  transform: rotate(90deg);
+  transform-origin: center;
+}
+
+.border-side-bottom {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.border-side-left {
+  transform-origin: center;
+}
+
+.border-side-right {
+  transform: rotate(180deg);
+  transform-origin: center;
 }
 
 /* Spawned species visuals */
@@ -190,8 +269,8 @@ body {
 
 .telemetry {
   position: absolute;
-  left: 24px;
-  bottom: 24px;
+  left: 20px;
+  bottom: 20px;
   font-size: clamp(10px, 1.2vw, 14px);
   color: var(--muted);
   display: grid;
@@ -205,12 +284,13 @@ body {
 
 .utc-time {
   position: absolute;
-  bottom: 24px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   color: #e9e9ee;
   font-size: clamp(12px, 1.6vw, 16px);
   letter-spacing: 0.12em;
+  z-index: 3;
 }
 
 .side {
@@ -371,14 +451,14 @@ body {
   position: absolute;
   bottom: 8px;
   width: 120px;
-  height: 44px;
+  height: 120px;
   object-fit: contain;
 }
 .stick-stand {
   position: relative;
-  bottom: -15px;
-  width: 92px;
-  height: 92px;
+  bottom: 20px;
+  width: 120px;
+  height: 120px;
   object-fit: contain;
   transition: none;
 }

@@ -1,3 +1,6 @@
+// Test that the file is loading
+console.log('=== main.js starting to load ===');
+
 // DOM elements - will be initialized when DOM is ready
 let introScreen, gameScreen, playButton, inventoryScreen, encyclopediaScreen;
 let keyElements, stick, viewportEl, craneEl;
@@ -141,6 +144,8 @@ function seedLayoutOrder() {
 }
 
 function showGameScreen() {
+  console.log('=== SHOW GAME SCREEN CALLED ===');
+  console.log('PLAY button clicked - starting game...');
   if (transitionTimeoutId !== null) {
     clearTimeout(transitionTimeoutId);
     transitionTimeoutId = null;
@@ -156,11 +161,17 @@ function showGameScreen() {
       gameScreen.setAttribute("aria-hidden", "false");
       // Initialize crane and visible species on enter
       setTimeout(() => {
+        console.log('Game screen initialization starting...');
         ensureCrane();
         centerCrane();
         seedLayoutOrder();
         refreshVisibleSpecies();
         updateTargetingFeedback();
+        // Initialize borders with a bit more delay to ensure viewport is fully rendered
+        setTimeout(() => {
+          console.log('About to initialize dynamic borders...');
+          initializeDynamicBorders();
+        }, 100);
       }, 200);
     },
     { once: true }
@@ -171,7 +182,10 @@ function showGameScreen() {
 function initializeEventListeners() {
   // Allow manual start via PLAY
   if (playButton) {
+    console.log('Adding click listener to play button...');
     playButton.addEventListener("click", showGameScreen);
+  } else {
+    console.log('Play button not found!');
   }
 
   // Keyboard accessibility during intro: Enter/Space triggers play
@@ -193,6 +207,9 @@ function initializeEventListeners() {
   // Game keyboard controls
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
+  
+  // Window resize handling for dynamic borders
+  window.addEventListener("resize", handleResize);
 
   // Winner overlay buttons
   if (winnerContinueBtn) {
@@ -223,6 +240,7 @@ function initializeEventListeners() {
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   try {
+    console.log('DOM loaded, initializing game...');
     initializeDOMElements();
     initializeEventListeners();
     console.log('Game initialized successfully');
@@ -230,6 +248,162 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error('Error initializing game:', error);
   }
 });
+
+// -------- Dynamic Border Rendering --------
+function initializeDynamicBorders() {
+  console.log('Initializing dynamic borders...');
+  const viewportBorder = document.querySelector('.viewport-border');
+  if (!viewportBorder) {
+    console.log('Viewport border not found');
+    return;
+  }
+  
+  // Clear existing border sides (keep corners)
+  const existingSides = viewportBorder.querySelectorAll('.border-side');
+  console.log(`Clearing ${existingSides.length} existing border sides`);
+  existingSides.forEach(side => side.remove());
+  
+  // Get viewport dimensions
+  const viewport = document.getElementById('viewport');
+  if (!viewport) {
+    console.log('Viewport not found');
+    return;
+  }
+  
+  const rect = viewport.getBoundingClientRect();
+  const borderSize = 120; // Size of each border element
+  const cornerSize = 120; // Size of corner elements
+  
+  console.log(`Viewport dimensions: ${rect.width}x${rect.height}`);
+  
+  // Check if viewport has valid dimensions
+  if (rect.width <= 0 || rect.height <= 0) {
+    console.log('Viewport has no dimensions, retrying in 100ms...');
+    setTimeout(initializeDynamicBorders, 100);
+    return;
+  }
+  
+  // Calculate how many border sides we need
+  const availableWidth = rect.width - (cornerSize * 2); // Subtract corner space
+  const availableHeight = rect.height - (cornerSize * 2); // Subtract corner space
+  
+  const topBottomCount = Math.floor(availableWidth / borderSize); // Use floor instead of ceil to avoid overflow
+  const leftRightCount = Math.floor(availableHeight / borderSize); // Use floor instead of ceil to avoid overflow
+  
+  console.log(`Available space: ${availableWidth}x${availableHeight}`);
+  console.log(`Creating ${topBottomCount} top/bottom sides and ${leftRightCount} left/right sides`);
+  
+  // Create top border sides: left to right, then final piece from right
+  for (let i = 0; i <= topBottomCount - 1; i++) {
+    const side = document.createElement('div');
+    side.className = 'border-side border-side-top';
+    side.style.left = `${cornerSize + (i * borderSize)}px`;
+    side.style.top = '0px';
+    viewportBorder.appendChild(side);
+  }
+  // Final top piece from right
+  if (topBottomCount > 0) {
+    const finalTopSide = document.createElement('div');
+    finalTopSide.className = 'border-side border-side-top';
+    finalTopSide.style.left = `${rect.width - cornerSize - borderSize}px`;
+    finalTopSide.style.top = '0px';
+    viewportBorder.appendChild(finalTopSide);
+  }
+  
+  // Create bottom border sides: right to left, then final piece from left
+  for (let i = 0; i <= topBottomCount - 1; i++) {
+    const side = document.createElement('div');
+    side.className = 'border-side border-side-bottom';
+    side.style.left = `${rect.width - cornerSize - borderSize - (i * borderSize)}px`;
+    side.style.bottom = '0px';
+    viewportBorder.appendChild(side);
+  }
+  // Final bottom piece from left
+  if (topBottomCount > 0) {
+    const finalBottomSide = document.createElement('div');
+    finalBottomSide.className = 'border-side border-side-bottom';
+    finalBottomSide.style.left = `${cornerSize}px`;
+    finalBottomSide.style.bottom = '0px';
+    viewportBorder.appendChild(finalBottomSide);
+  }
+  
+  // Create left border sides: top to bottom, then final piece from bottom
+  for (let i = 0; i <= leftRightCount - 1; i++) {
+    const side = document.createElement('div');
+    side.className = 'border-side border-side-left';
+    side.style.left = '0px';
+    side.style.top = `${cornerSize + (i * borderSize)}px`;
+    viewportBorder.appendChild(side);
+  }
+  // Final left piece from bottom
+  if (leftRightCount > 0) {
+    const finalLeftSide = document.createElement('div');
+    finalLeftSide.className = 'border-side border-side-left';
+    finalLeftSide.style.left = '0px';
+    finalLeftSide.style.top = `${rect.height - cornerSize - borderSize}px`;
+    viewportBorder.appendChild(finalLeftSide);
+  }
+  
+  // Create right border sides: top to bottom, then final piece from bottom
+  for (let i = 0; i <= leftRightCount - 1; i++) {
+    const side = document.createElement('div');
+    side.className = 'border-side border-side-right';
+    side.style.right = '0px';
+    side.style.top = `${cornerSize + (i * borderSize)}px`;
+    viewportBorder.appendChild(side);
+  }
+  // Final right piece from bottom
+  if (leftRightCount > 0) {
+    const finalRightSide = document.createElement('div');
+    finalRightSide.className = 'border-side border-side-right';
+    finalRightSide.style.right = '0px';
+    finalRightSide.style.top = `${rect.height - cornerSize - borderSize}px`;
+    viewportBorder.appendChild(finalRightSide);
+  }
+  
+  console.log('Dynamic borders initialized successfully');
+}
+
+// Manual test function - can be called from browser console
+window.testDynamicBorders = function() {
+  console.log('Manual test of dynamic borders...');
+  initializeDynamicBorders();
+};
+
+// Also make the main function available for debugging
+window.initializeDynamicBorders = initializeDynamicBorders;
+window.showGameScreen = showGameScreen;
+
+// Simple test to verify JavaScript is loading
+console.log('main.js loaded successfully');
+window.testJS = function() {
+  console.log('JavaScript is working!');
+  return 'JS is loaded';
+};
+
+// Test play button
+window.testPlayButton = function() {
+  const btn = document.getElementById('play-btn');
+  if (btn) {
+    console.log('Play button found:', btn);
+    console.log('Play button text:', btn.textContent);
+    return 'Play button exists';
+  } else {
+    console.log('Play button NOT found');
+    return 'Play button missing';
+  }
+};
+
+// Add error handling to catch any issues
+window.addEventListener('error', function(e) {
+  console.error('JavaScript error:', e.error);
+  console.error('Error details:', e.message, 'at', e.filename, 'line', e.lineno);
+});
+
+// Handle window resize to recalculate borders
+function handleResize() {
+  initializeDynamicBorders();
+}
 
 // -------- Game logic --------
 function updateHud() {
